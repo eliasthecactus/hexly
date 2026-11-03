@@ -64,7 +64,8 @@ impl Document {
     }
 
     pub fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
-        let path = dunce::canonicalize(path.as_ref()).unwrap_or_else(|_| path.as_ref().to_path_buf());
+        let path =
+            dunce::canonicalize(path.as_ref()).unwrap_or_else(|_| path.as_ref().to_path_buf());
         let source = load_source(&path)?;
         let readonly = OpenOptions::new().append(true).open(&path).is_err();
         Ok(Document {

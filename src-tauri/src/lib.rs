@@ -2,7 +2,6 @@ mod commands;
 mod state;
 
 use state::AppState;
-use tauri::{Emitter, Manager};
 
 /// Collects file paths from command-line arguments (skipping flags).
 fn cli_files() -> Vec<String> {
@@ -150,6 +149,7 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             {
+                use tauri::Emitter;
                 let menu = build_menu(app.handle())?;
                 app.set_menu(menu)?;
                 app.on_menu_event(|app, event| {
@@ -212,6 +212,7 @@ pub fn run() {
             // Files opened from Finder / "Open With" on macOS.
             #[cfg(any(target_os = "macos", target_os = "ios"))]
             if let tauri::RunEvent::Opened { urls } = &event {
+                use tauri::{Emitter, Manager};
                 let paths: Vec<String> = urls
                     .iter()
                     .filter_map(|u| u.to_file_path().ok())
