@@ -14,6 +14,9 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      # secrets can't be used in `if:` directly
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +65,7 @@ jobs:
       # Optional: real Developer ID signing + notarization when the secrets exist.
       # Without them the app is ad-hoc signed (see README for opening it).
       - name: Import Apple certificate
-        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
+        if: runner.os == 'macOS' && env.HAS_APPLE_CERT == 'true'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -79,14 +82,29 @@ jobs:
           IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
           echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
+      # Tauri tries to notarize whenever APPLE_ID is set, even to an empty
+      # string, so only export these when the secrets actually exist.
+      - name: Notarization credentials
+        if: runner.os == 'macOS'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "APPLE_ID=$APPLE_ID" >> "$GITHUB_ENV"
+            echo "APPLE_PASSWORD=$APPLE_PASSWORD" >> "$GITHUB_ENV"
+            echo "APPLE_TEAM_ID=$APPLE_TEAM_ID" >> "$GITHUB_ENV"
+            echo "Notarization enabled"
+          else
+            echo "No Apple credentials, building ad-hoc signed"
+          fi
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', '__VERSION__') }}
           releaseName: Hexly ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
@@ -97,9 +115,9 @@ jobs:
             | --- | --- |
             | macOS (Apple Silicon + Intel) | `Hexly_*_universal.dmg` |
             | Windows | `Hexly_*_x64-setup.exe` or `.msi`, ARM64: `Hexly_*_arm64-setup.exe` |
-            | Debian / Ubuntu | `hexly_*_amd64.deb` / `arm64.deb` |
-            | Fedora / openSUSE | `hexly-*.x86_64.rpm` / `aarch64.rpm` |
-            | Any Linux | `hexly_*_amd64.AppImage` / `aarch64.AppImage` |
+            | Debian / Ubuntu | `Hexly_*_amd64.deb` / `Hexly_*_arm64.deb` |
+            | Fedora / openSUSE | `Hexly-*.x86_64.rpm` / `Hexly-*.aarch64.rpm` |
+            | Any Linux | `Hexly_*_amd64.AppImage` / `Hexly_*_aarch64.AppImage` |
 
             Installed apps update themselves from here.
           releaseDraft: true

@@ -65,10 +65,10 @@ Grab the latest build from [Releases](https://github.com/eliasthecactus/hexly/re
 | Platform | File |
 | --- | --- |
 | macOS (Apple Silicon and Intel) | `Hexly_x.y.z_universal.dmg` |
-| Windows | `Hexly_x.y.z_x64-setup.exe` or `.msi`, ARM64 `Hexly_x.y.z_arm64-setup.exe` |
-| Debian, Ubuntu | `hexly_x.y.z_amd64.deb` / `hexly_x.y.z_arm64.deb` |
-| Fedora, openSUSE | `hexly-x.y.z-1.x86_64.rpm` / `hexly-x.y.z-1.aarch64.rpm` |
-| Any Linux | `hexly_x.y.z_amd64.AppImage` / `hexly_x.y.z_aarch64.AppImage` |
+| Windows | `Hexly_x.y.z_x64-setup.exe` or `Hexly_x.y.z_x64_en-US.msi`, ARM64 `Hexly_x.y.z_arm64-setup.exe` |
+| Debian, Ubuntu | `Hexly_x.y.z_amd64.deb` / `Hexly_x.y.z_arm64.deb` |
+| Fedora, openSUSE | `Hexly-x.y.z-1.x86_64.rpm` / `Hexly-x.y.z-1.aarch64.rpm` |
+| Any Linux | `Hexly_x.y.z_amd64.AppImage` / `Hexly_x.y.z_aarch64.AppImage` |
 
 > **macOS:** until the builds are notarized, macOS may say the app "can't be opened". Right-click Hexly
 > in Applications and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/Hexly.app`.
