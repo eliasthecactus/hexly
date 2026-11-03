@@ -1,0 +1,26 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-title",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "core:webview:allow-set-webview-zoom",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    "dialog:allow-confirm",
+    "clipboard-manager:allow-write-text",
+    "clipboard-manager:allow-read-text",
+    "updater:default",
+    "process:default",
+    "process:allow-exit",
+    "process:allow-restart",
+    "opener:default"
+  ]
+}

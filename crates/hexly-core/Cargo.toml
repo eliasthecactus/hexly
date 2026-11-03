@@ -1,0 +1,31 @@
+[package]
+name = "hexly-core"
+description = "Core engine of the Hexly hex editor: piece table, search, inspector, binary formats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+memmap2 = "0.9"
+memchr = "2"
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode"] }
+goblin = "0.10"
+capstone = "0.14"
+half = "2"
+sha1 = "0.11"
+sha2 = "0.11"
+md-5 = "0.11"
+crc32fast = "1"
+xxhash-rust = { version = "0.8", features = ["xxh64", "xxh3"] }
+base64 = "0.22"
+dunce = "1"
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "3"

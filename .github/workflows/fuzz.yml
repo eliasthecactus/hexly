@@ -1,0 +1,31 @@
+name: Fuzz
+
+# Malformed binaries are exactly what a hex editor gets fed. This runs the
+# fuzz targets for a few minutes every night.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [piece_table, formats, search]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+      - run: cargo install cargo-fuzz --locked
+      - name: Fuzz ${{ matrix.target }}
+        working-directory: fuzz
+        run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=300
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: crash-${{ matrix.target }}
+          path: fuzz/artifacts

@@ -1,0 +1,108 @@
+name: Release
+
+# Push a tag like v0.2.0 (or run manually) to build installers for every
+# platform and attach them to a draft GitHub Release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (universal)
+            os: macos-latest
+            args: --target universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - name: Windows (x64)
+            os: windows-latest
+            args: ""
+          - name: Windows (ARM64)
+            os: windows-latest
+            args: --target aarch64-pc-windows-msvc --bundles nsis
+            rust_targets: aarch64-pc-windows-msvc
+          - name: Linux (x64)
+            os: ubuntu-22.04
+            args: ""
+          - name: Linux (ARM64)
+            os: ubuntu-22.04-arm
+            args: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.name }}
+
+      - name: Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf rpm
+
+      - run: npm ci
+
+      # Optional: real Developer ID signing + notarization when the secrets exist.
+      # Without them the app is ad-hoc signed (see README for opening it).
+      - name: Import Apple certificate
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ github.run_id }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm certificate.p12
+          IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+          echo "APPLE_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', '__VERSION__') }}
+          releaseName: Hexly ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseBody: |
+            Installers for every platform are attached below.
+
+            | Platform | File |
+            | --- | --- |
+            | macOS (Apple Silicon + Intel) | `Hexly_*_universal.dmg` |
+            | Windows | `Hexly_*_x64-setup.exe` or `.msi`, ARM64: `Hexly_*_arm64-setup.exe` |
+            | Debian / Ubuntu | `hexly_*_amd64.deb` / `arm64.deb` |
+            | Fedora / openSUSE | `hexly-*.x86_64.rpm` / `aarch64.rpm` |
+            | Any Linux | `hexly_*_amd64.AppImage` / `aarch64.AppImage` |
+
+            Installed apps update themselves from here.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          args: ${{ matrix.args }}

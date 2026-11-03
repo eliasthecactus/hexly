@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["crates/hexly-core", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/eliasthecactus/hexly"
+authors = ["Elias Frehner"]
+rust-version = "1.80"
+
+[workspace.dependencies]
+hexly-core = { path = "crates/hexly-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+parking_lot = "0.12"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
+panic = "unwind"
+
+[profile.dev.package."*"]
+opt-level = 2
