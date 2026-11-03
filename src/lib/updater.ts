@@ -33,7 +33,12 @@ export async function checkForUpdates(manual = false) {
       },
     };
   } catch (e) {
-    if (manual) store.toast(`Update check failed: ${errorText(e)}`, "error");
+    // The updater only reports a generic error for "offline" and for "no
+    // published release yet", so explain both in plain words.
+    console.warn("update check failed:", errorText(e));
+    if (manual) {
+      store.toast("Couldn't check for updates. You may be offline, or no release has been published yet.", "error");
+    }
   } finally {
     checking = false;
   }
